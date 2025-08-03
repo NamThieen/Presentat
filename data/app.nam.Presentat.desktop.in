@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=presentat
+Exec=presentat
+Icon=app.nam.Presentat
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=GTK;
+StartupNotify=true
+DBusActivatable=true
