@@ -1,13 +1,13 @@
 {
-    "id" : "app.nam.Presentat",
-    "runtime" : "org.gnome.Platform",
-    "runtime-version" : "48",
-    "sdk" : "org.gnome.Sdk",
-    "sdk-extensions" : [
+    "id": "app.nam.Presentat",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "48",
+    "sdk": "org.gnome.Sdk",
+    "sdk-extensions": [
         "org.freedesktop.Sdk.Extension.node20"
     ],
-    "command" : "presentat",
-    "finish-args" : [
+    "command": "presentat",
+    "finish-args": [
         "--share=network",
         "--share=ipc",
         "--socket=fallback-x11",
@@ -18,7 +18,7 @@
         "--filesystem=xdg-documents:rw",
         "--filesystem=host:ro"
     ],
-    "cleanup" : [
+    "cleanup": [
         "/include",
         "/lib/pkgconfig",
         "/man",
@@ -29,26 +29,38 @@
         "*.la",
         "*.a"
     ],
-    "modules" : [
+    "modules": [
+	{
+    	"name": "marp-cli-source",
+    	"buildsystem": "simple",
+    	"sources": [
+        	{
+            	"type": "dir",
+            	"path": "/home/nam/marp_install_temp/node_modules/@marp-team/marp-cli"
+        	}
+    	],
+    	"build-commands": [
+        	"mkdir -p /app/share/marp-cli/",
+        	"cp -r . /app/share/marp-cli/",
+        	"mkdir -p /app/bin",
+        	"ln -s /app/share/marp-cli/marp-cli.js /app/bin/marp-cli"
+    	]
+	},
         {
-            "name" : "marp-cli",
-            "buildsystem" : "simple",
-            "build-commands" : [
-                "export PATH=/usr/lib/sdk/node20/bin:$PATH && npm install -g @marp-team/marp-cli",
-                "cp -a /app/bin/marp /app/bin/marp-cli"
-            ],
-            "sources" : []
-        },
-        {
-            "name" : "presentat",
-            "builddir" : true,
-            "buildsystem" : "meson",
-            "sources" : [
+            "name": "presentat",
+            "builddir": true,
+            "buildsystem": "meson",
+            "sources": [
                 {
-                    "type" : "git",
-                    "url" : "file:///home/nam/Projects"
+                    "type": "git",
+                    "url": "file:///home/nam/Projects"
                 }
-            ]
+            ],
+            "build-options": {
+                "env": {
+                    "PATH": "/usr/lib/sdk/node20/bin:$PATH"
+                }
+            }
         }
     ]
 }

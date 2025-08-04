@@ -23,7 +23,7 @@ from .core.file_manager import FileManager
 from .core.directory_tree import create_child_model_func, FileListItem
 from .core.marp_converter import MarpConverter
 from .core.previewer import PresentationPreviewer
-
+from threading import Thread
 
 @Gtk.Template(resource_path='/app/nam/Presentat/window.ui')
 class PresentatWindow(Adw.ApplicationWindow):
@@ -82,30 +82,48 @@ class PresentatWindow(Adw.ApplicationWindow):
         selection_model.connect('notify::selected-item', self.on_list_item_selected)
 
         self.current_folder = None
-        initial_text = "# Hello World\n\nThis is a Marp presentation!"
-        buffer.set_text(initial_text, -1)
+
+        self._preview_update_timeout_id = None
         self.marp_converter = MarpConverter()
         buffer.connect("changed", self.on_text_changed)
+
+
+
     def on_text_changed(self, buffer):
-        if hasattr(self, '_preview_update_timeout_id'):
+        if self._preview_update_timeout_id is not None:
             GLib.source_remove(self._preview_update_timeout_id)
 
         self._preview_update_timeout_id = GLib.timeout_add_seconds(0.5, self._trigger_marp_conversion)
 
     def _trigger_marp_conversion(self):
+        self._preview_update_timeout_id = None
         markdown_text = self.main_text_view.get_buffer().get_text(
             self.main_text_view.get_buffer().get_start_iter(),
             self.main_text_view.get_buffer().get_end_iter(),
             False
         )
-        self.marp_converter.convert_to_html_async(markdown_text, self._on_marp_html_received)
+
+        # We need to run the blocking conversion in a separate thread
+        conversion_thread = Thread(target=self._run_conversion, args=(markdown_text,))
+        conversion_thread.start()
+
         return False # Required for GLib timeout
+
+    def _run_conversion(self, markdown_content):
+        """Runs the blocking conversion in a background thread."""
+        success, result = self.marp_converter.convert_to_html(markdown_content)
+
+        # Use GLib.idle_add to update the UI from the main thread
+        GLib.idle_add(self._on_marp_html_received, success, result)
+
     def _on_marp_html_received(self, success, result):
         if success:
             self.preview_web_view.load_marp_html(result)
+            # You can add a toast here for success if you wish
         else:
             error_html = f"<html><body><h1>Error</h1><p>{GLib.markup_escape_text(result)}</p></body></html>"
             self.preview_web_view.load_marp_html(error_html)
+            self.toast_overlay.add_toast(Adw.Toast(title="Conversion failed"))
 
     def _factory_setup(self, factory, list_item: Gtk.ListItem):
         """
@@ -260,4 +278,3 @@ class PresentatWindow(Adw.ApplicationWindow):
         root_row = self.tree_list_model.get_row(0)
         if root_row:
             root_row.set_expanded(True)
-

@@ -17,15 +17,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import gi
-gi.require_version('WebKit', '6.0')
 from gi.repository import Gio, GLib, GObject, WebKit
+import gi
+
+gi.require_version("WebKit", "6.0")
+
 
 class PresentationPreviewer(WebKit.WebView):
     """
     A custom WebKitWebView to handle Marp previews and inter-process communication.
     """
-    __gtype_name__ = 'PresentationPreviewer'
+
+    __gtype_name__ = "PresentationPreviewer"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -34,42 +37,26 @@ class PresentationPreviewer(WebKit.WebView):
         self.get_settings().set_enable_javascript(True)
         self.get_settings().set_enable_media(False)
 
-        # Get the default WebKit.WebContext.
-        # It's a shared singleton for all web views.
         web_context = WebKit.WebContext.get_default()
 
-        # The correct way to handle a custom URI scheme is to register a handler
-        # on the WebContext. We do NOT connect a signal on the WebView instance.
         web_context.register_uri_scheme(
             "marp",
-            self._on_uri_scheme_request, # Corrected to use the existing method name
-            None
+            self._on_uri_scheme_request,
+            None,
         )
 
-    def _on_uri_scheme_request(self, request: WebKit.URISchemeRequest):
-        """
-        This is the handler for custom 'marp://' URIs.
-        It is called by the WebKit.WebContext whenever a matching URI is
-        requested by this or any other WebKitWebView in the application.
-        """
+    def _on_uri_scheme_request(self, request: WebKit.URISchemeRequest, user_data=None):
         uri = request.get_uri()
         if uri.startswith("marp://preview"):
-            # Acknowledging the request, even if we are not providing content here.
-            # load_html() is already taking care of the content, but the scheme
-            # handler is still required for the load to succeed.
-            stream = Gio.MemoryInputStream.new_from_data(b"", -1, None)
+            stream = Gio.MemoryInputStream.new_from_data(b"")
             request.finish(stream, 0, None)
         else:
             error = GLib.Error(
                 WebKit.URI_SCHEME_ERROR,
                 WebKit.URI_SCHEME_ERROR.FAILED,
-                f"Unsupported URI: {uri}"
+                f"Unsupported URI: {uri}",
             )
             request.finish_error(error)
 
     def load_marp_html(self, html_content):
-        """
-        Loads the generated HTML content directly into the web view.
-        The custom URI 'marp://preview/' tells our handler to handle the request.
-        """
-        self.load_html(html_content, 'marp://preview/')
+        self.load_html(html_content, "marp://preview/")
