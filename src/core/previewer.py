@@ -17,17 +17,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Gio, GLib, GObject, WebKit
-import gi
 
+from gi.repository import Gio, GLib, WebKit
+import gi
 gi.require_version("WebKit", "6.0")
 
 
 class PresentationPreviewer(WebKit.WebView):
-    """
-    A custom WebKitWebView to handle Marp previews and inter-process communication.
-    """
-
     __gtype_name__ = "PresentationPreviewer"
 
     def __init__(self, **kwargs):
